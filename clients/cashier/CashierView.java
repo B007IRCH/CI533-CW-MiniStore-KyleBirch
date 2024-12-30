@@ -6,7 +6,10 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 
-public class CashierView {
+import java.util.Observable;
+import java.util.Observer;
+
+public class CashierView implements Observer {
   private final VBox rootNode;
   private final Label pageTitle;
   private final Label theAction;
@@ -37,5 +40,13 @@ public class CashierView {
     theBtCheck.setOnAction(e -> controller.doCheck(theInput.getText()));
     theBtBuy.setOnAction(e -> controller.doBuy());
     theBtBought.setOnAction(e -> controller.doBought());
+  }
+
+  @Override
+  public void update(Observable o, Object arg) {
+    if (arg instanceof String) {
+      theAction.setText((String) arg);
+      theOutput.appendText((String) arg + "\n");
+    }
   }
 }

@@ -6,7 +6,10 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 
-public class BackDoorView {
+import java.util.Observable;
+import java.util.Observer;
+
+public class BackDoorView implements Observer {
   private final VBox rootNode;
   private final Label pageTitle;
   private final Label theAction;
@@ -24,6 +27,7 @@ public class BackDoorView {
     theInput = new TextField();
     theInputNo = new TextField("0");
     theOutput = new TextArea();
+    theOutput.setEditable(false);
     theBtClear = new Button("Clear");
     theBtRStock = new Button("Add");
     theBtQuery = new Button("Query");
@@ -39,5 +43,17 @@ public class BackDoorView {
     theBtQuery.setOnAction(e -> controller.doQuery(theInput.getText()));
     theBtRStock.setOnAction(e -> controller.doRStock(theInput.getText(), theInputNo.getText()));
     theBtClear.setOnAction(e -> controller.doClear());
+  }
+
+  public void updateView(String action) {
+    theAction.setText(action);
+    theOutput.appendText(action + "\n");
+  }
+
+  @Override
+  public void update(Observable o, Object arg) {
+    if (arg instanceof String) {
+      updateView((String) arg);
+    }
   }
 }

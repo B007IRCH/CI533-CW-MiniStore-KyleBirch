@@ -1,50 +1,44 @@
 package clients.packing;
 
-
 import middle.MiddleFactory;
 import middle.Names;
 import middle.RemoteMiddleFactory;
-
-import javax.swing.*;
+import javafx.application.Application;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
 
 /**
- * The standalone warehouse Packing Client. warehouse staff to pack the bought order
- * @author  Mike Smith University of Brighton
- * @version 2.0
- * @author  Shine University of Brighton
- * @version year 2024
+ * The standalone Packing Client
  */
-public class PackingClient 
-{
-   public static void main (String args[])
-   {
-     String stockURL = args.length < 1     // URL of stock RW
-                     ? Names.STOCK_RW      //  default  location
-                     : args[0];            //  supplied location
-     String orderURL = args.length < 2     // URL of order
-                     ? Names.ORDER         //  default  location
-                     : args[1];            //  supplied location
-     
-    RemoteMiddleFactory mrf = new RemoteMiddleFactory();
-    mrf.setStockRWInfo( stockURL );
-    mrf.setOrderInfo  ( orderURL );        //
-    displayGUI(mrf);                       // Create GUI
-  }
-  
-  public static void displayGUI(MiddleFactory mf)
-  {     
-    JFrame  window = new JFrame();
-     
-    window.setTitle( "Packing Client (RMI MVC)");
-    window.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
-    
-    PackingModel      model = new PackingModel(mf);
-    PackingView       view  = new PackingView( window, mf, 0, 0 );
-    PackingController cont  = new PackingController( model, view );
-    view.setController( cont );
+public class PackingClient extends Application {
 
-    model.addObserver( view );       // Add observer to the model
-    window.setVisible(true);         // Display Screen
-  }
+    public static void main(String[] args) {
+        launch(args);
+    }
+
+    @Override
+    public void start(Stage primaryStage) {
+        String stockURL = getParameters().getRaw().size() < 1
+                ? Names.STOCK_RW // Default location
+                : getParameters().getRaw().get(0);
+
+        RemoteMiddleFactory mrf = new RemoteMiddleFactory();
+        mrf.setStockRWInfo(stockURL);
+
+        displayGUI(primaryStage, mrf);
+    }
+
+    private void displayGUI(Stage stage, MiddleFactory mf) {
+        PackingModel model = new PackingModel(mf);
+        PackingView view = new PackingView(); // Use no-argument constructor
+        PackingController controller = new PackingController(model, view);
+
+        model.addObserver(view); // Add view as an observer
+        view.setController(controller);
+
+        Scene scene = new Scene(view.getRootNode(), 600, 400);
+        stage.setScene(scene);
+        stage.setTitle("Packing Client (MVC RMI)");
+        stage.show();
+    }
 }
-

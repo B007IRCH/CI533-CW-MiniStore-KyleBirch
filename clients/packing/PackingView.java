@@ -5,7 +5,10 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.VBox;
 
-public class PackingView {
+import java.util.Observable;
+import java.util.Observer;
+
+public class PackingView implements Observer {
   private final VBox rootNode;
   private final Label pageTitle;
   private final Label theAction;
@@ -28,5 +31,13 @@ public class PackingView {
 
   public void setController(PackingController controller) {
     theBtPack.setOnAction(e -> controller.doPacked());
+  }
+
+  @Override
+  public void update(Observable o, Object arg) {
+    if (arg instanceof String) {
+      theAction.setText((String) arg);
+      theOutput.appendText((String) arg + "\n");
+    }
   }
 }

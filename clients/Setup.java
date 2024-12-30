@@ -8,7 +8,7 @@ import java.util.ArrayList;
 
 /**
  * Repopulate the database with test data
- * @author  Mike Smith University of Brighton
+ * @author  Kyle Sean Birch University of Brighton
  * @version 3.0 Derby
  */
 

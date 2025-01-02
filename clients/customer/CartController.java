@@ -29,6 +29,15 @@ public class CartController {
     }
 
     /**
+     * Removes a product from the cart by its name.
+     * @param productName The name of the product to remove.
+     */
+    public void removeByName(String productName) {
+        cart.getItems().removeIf(item -> item.getProduct().getDescription().equalsIgnoreCase(productName));
+        System.out.println("Removed product with name " + productName + " from the cart.");
+    }
+
+    /**
      * Returns a list of all items in the cart.
      * @return A list of CartItem objects.
      */

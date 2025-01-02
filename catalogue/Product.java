@@ -1,20 +1,23 @@
 package catalogue;
 
+import javafx.beans.property.*;
 import java.io.Serializable;
 import java.util.Objects;
 
 /**
  * Represents a product in the catalog, holding information
  * about product number, description, price, and stock level.
+ * Supports JavaFX properties for GUI bindings.
  * @author  Kyle Sean
- * @version 2.1
+ * @version 2.2
  */
 public class Product implements Serializable {
   private static final long serialVersionUID = 20092506L;
-  private String theProductNum;       // Product number
-  private String theDescription;      // Description of product
-  private double thePrice;            // Price of product
-  private int theQuantity;            // Stock level
+
+  private final StringProperty productNum;       // Product number
+  private final StringProperty description;      // Description of product
+  private final DoubleProperty price;            // Price of product
+  private final IntegerProperty quantity;        // Stock level
 
   /**
    * Constructs a product with the given details.
@@ -23,12 +26,11 @@ public class Product implements Serializable {
    * @param aPrice Price of the product
    * @param aQuantity Stock level
    */
-  public Product(String aProductNum, String aDescription,
-                 double aPrice, int aQuantity) {
-    theProductNum = aProductNum;     // Product number
-    theDescription = aDescription;  // Description of product
-    thePrice = aPrice;              // Price of product
-    theQuantity = aQuantity;        // Stock level
+  public Product(String aProductNum, String aDescription, double aPrice, int aQuantity) {
+    this.productNum = new SimpleStringProperty(aProductNum);
+    this.description = new SimpleStringProperty(aDescription);
+    this.price = new SimpleDoubleProperty(aPrice);
+    this.quantity = new SimpleIntegerProperty(aQuantity);
   }
 
   /**
@@ -36,7 +38,7 @@ public class Product implements Serializable {
    * @return Product number
    */
   public String getProductNum() {
-    return theProductNum;
+    return productNum.get();
   }
 
   /**
@@ -44,7 +46,15 @@ public class Product implements Serializable {
    * @param aProductNum Product number
    */
   public void setProductNum(String aProductNum) {
-    this.theProductNum = aProductNum;
+    this.productNum.set(aProductNum);
+  }
+
+  /**
+   * Returns the product number property (for JavaFX bindings).
+   * @return StringProperty of product number
+   */
+  public StringProperty productNumProperty() {
+    return productNum;
   }
 
   /**
@@ -52,7 +62,7 @@ public class Product implements Serializable {
    * @return Product description
    */
   public String getDescription() {
-    return theDescription;
+    return description.get();
   }
 
   /**
@@ -60,7 +70,15 @@ public class Product implements Serializable {
    * @param aDescription Product description
    */
   public void setDescription(String aDescription) {
-    this.theDescription = aDescription;
+    this.description.set(aDescription);
+  }
+
+  /**
+   * Returns the description property (for JavaFX bindings).
+   * @return StringProperty of product description
+   */
+  public StringProperty descriptionProperty() {
+    return description;
   }
 
   /**
@@ -68,7 +86,7 @@ public class Product implements Serializable {
    * @return Product price
    */
   public double getPrice() {
-    return thePrice;
+    return price.get();
   }
 
   /**
@@ -76,7 +94,15 @@ public class Product implements Serializable {
    * @param aPrice Product price
    */
   public void setPrice(double aPrice) {
-    this.thePrice = aPrice;
+    this.price.set(aPrice);
+  }
+
+  /**
+   * Returns the price property (for JavaFX bindings).
+   * @return DoubleProperty of product price
+   */
+  public DoubleProperty priceProperty() {
+    return price;
   }
 
   /**
@@ -84,7 +110,7 @@ public class Product implements Serializable {
    * @return Product quantity
    */
   public int getQuantity() {
-    return theQuantity;
+    return quantity.get();
   }
 
   /**
@@ -92,7 +118,15 @@ public class Product implements Serializable {
    * @param aQuantity Product quantity
    */
   public void setQuantity(int aQuantity) {
-    this.theQuantity = aQuantity;
+    this.quantity.set(aQuantity);
+  }
+
+  /**
+   * Returns the quantity property (for JavaFX bindings).
+   * @return IntegerProperty of product quantity
+   */
+  public IntegerProperty quantityProperty() {
+    return quantity;
   }
 
   /**
@@ -102,10 +136,10 @@ public class Product implements Serializable {
   @Override
   public String toString() {
     return "Product{" +
-            "ProductNum='" + theProductNum + '\'' +
-            ", Description='" + theDescription + '\'' +
-            ", Price=" + thePrice +
-            ", Quantity=" + theQuantity +
+            "ProductNum='" + productNum.get() + '\'' +
+            ", Description='" + description.get() + '\'' +
+            ", Price=" + price.get() +
+            ", Quantity=" + quantity.get() +
             '}';
   }
 
@@ -120,7 +154,7 @@ public class Product implements Serializable {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     Product product = (Product) o;
-    return Objects.equals(theProductNum, product.theProductNum);
+    return Objects.equals(productNum.get(), product.productNum.get());
   }
 
   /**
@@ -129,6 +163,6 @@ public class Product implements Serializable {
    */
   @Override
   public int hashCode() {
-    return Objects.hash(theProductNum);
+    return Objects.hash(productNum.get());
   }
 }

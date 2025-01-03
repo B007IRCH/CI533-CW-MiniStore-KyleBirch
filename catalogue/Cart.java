@@ -1,5 +1,7 @@
 package catalogue;
 
+import clients.customer.CartItem;
+
 import java.util.ArrayList;
 import java.util.List;
 

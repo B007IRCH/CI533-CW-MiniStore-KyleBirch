@@ -1,10 +1,13 @@
 package clients.gui;
 
 import clients.customer.CartController;
+import clients.customer.CartItem;
 import catalogue.Product;
+import dbAccess.DerbyAccess;
 import javafx.application.Application;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -14,7 +17,10 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 
-import java.util.List;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.util.Locale;
 
 public class MainApp extends Application {
     private CartController cartController = new CartController();
@@ -38,6 +44,10 @@ public class MainApp extends Application {
         searchBar.setPromptText("Search products...");
         searchBar.setStyle("-fx-font-size: 14px; -fx-padding: 5; -fx-border-radius: 5; -fx-background-radius: 5;");
 
+        ListView<String> suggestionList = new ListView<>();
+        suggestionList.setPrefHeight(120);
+        suggestionList.setVisible(false);
+
         Button viewCartButton = new Button("View Cart");
         styleNavButton(viewCartButton);
         viewCartButton.setOnAction(e -> showCartModal());
@@ -50,7 +60,8 @@ public class MainApp extends Application {
 
         navBar.getChildren().addAll(logoLabel, searchBar, viewCartButton, wishlistButton, adminButton);
         HBox.setHgrow(searchBar, Priority.ALWAYS);
-        root.setTop(navBar);
+        VBox searchSection = new VBox(navBar, suggestionList);
+        root.setTop(searchSection);
 
         // Center - Product Cards
         FlowPane productPane = new FlowPane();
@@ -60,7 +71,9 @@ public class MainApp extends Application {
         productPane.setAlignment(Pos.CENTER);
         productPane.setStyle("-fx-background-color: transparent;");
 
-        for (Product product : loadProductData()) {
+        ensureDatabaseSetup();
+        loadProductDataFromDatabase();
+        for (Product product : productData) {
             VBox productCard = createProductCard(product);
             productPane.getChildren().add(productCard);
         }
@@ -71,10 +84,33 @@ public class MainApp extends Application {
         HBox footer = new HBox();
         footer.setStyle("-fx-background-color: #2A9D8F; -fx-padding: 10;");
         footer.setAlignment(Pos.CENTER);
-        Label footerLabel = new Label("\u00A9 2025 MiniStore | Contact Us: support@ministore.com");
+        Label footerLabel = new Label("© 2025 MiniStore | Contact Us: support@ministore.com");
         footerLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: white;");
         footer.getChildren().add(footerLabel);
         root.setBottom(footer);
+
+        // Add search functionality
+        FilteredList<Product> filteredProducts = new FilteredList<>(productData, p -> true);
+        searchBar.textProperty().addListener((observable, oldValue, newValue) -> {
+            String lowerCaseFilter = newValue.toLowerCase(Locale.ROOT);
+
+            filteredProducts.setPredicate(product -> product.getDescription().toLowerCase(Locale.ROOT).contains(lowerCaseFilter));
+            productPane.getChildren().clear();
+            filteredProducts.forEach(product -> productPane.getChildren().add(createProductCard(product)));
+
+            suggestionList.getItems().clear();
+            filteredProducts.stream()
+                    .map(Product::getDescription)
+                    .forEach(suggestionList.getItems()::add);
+
+            suggestionList.setVisible(!suggestionList.getItems().isEmpty());
+        });
+
+        suggestionList.setOnMouseClicked(e -> {
+            String selected = suggestionList.getSelectionModel().getSelectedItem();
+            searchBar.setText(selected);
+            suggestionList.setVisible(false);
+        });
 
         // Set scene and stage
         Scene scene = new Scene(root, 1000, 700);
@@ -92,21 +128,17 @@ public class MainApp extends Application {
                 "-fx-border-radius: 10px; -fx-background-radius: 10px; " +
                 "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 10, 0.2, 0, 0);");
 
-        // Product Image
-        ImageView productImage = new ImageView(new Image("file:sample.jpg")); // Replace with actual image path
+        ImageView productImage = new ImageView(new Image("file:sample.jpg"));
         productImage.setFitWidth(150);
         productImage.setFitHeight(150);
         productImage.setPreserveRatio(true);
 
-        // Product Name
         Label productName = new Label(product.getDescription());
         productName.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
 
-        // Product Price
         Label productPrice = new Label("$" + product.getPrice());
         productPrice.setStyle("-fx-font-size: 14px; -fx-text-fill: #2A9D8F;");
 
-        // Add to Cart Button
         Button addToCartButton = new Button("Add to Cart");
         addToCartButton.setStyle("-fx-background-color: #E76F51; -fx-text-fill: white; -fx-padding: 5 10; " +
                 "-fx-border-radius: 5px; -fx-background-radius: 5px;");
@@ -116,15 +148,61 @@ public class MainApp extends Application {
         });
 
         card.getChildren().addAll(productImage, productName, productPrice, addToCartButton);
-
         return card;
     }
 
-    private ObservableList<Product> loadProductData() {
-        productData.add(new Product("P001", "Cat Toy", 9.99, 100));
-        productData.add(new Product("P002", "Cat Bed", 49.99, 50));
-        productData.add(new Product("P003", "Scratching Post", 29.99, 75));
-        return productData;
+    private void ensureDatabaseSetup() {
+        String databaseUrl = "jdbc:sqlite:./dbAccess/catshop.db";
+
+        try (Connection connection = java.sql.DriverManager.getConnection(databaseUrl)) {
+            Statement statement = connection.createStatement();
+
+            // Create the products table if it doesn't exist
+            String createTableQuery = "CREATE TABLE IF NOT EXISTS products (" +
+                    "product_id TEXT PRIMARY KEY, " +
+                    "description TEXT, " +
+                    "price REAL, " +
+                    "stock INTEGER)";
+            statement.execute(createTableQuery);
+
+            // Populate the table with sample data if empty
+            ResultSet resultSet = statement.executeQuery("SELECT COUNT(*) AS count FROM products");
+            if (resultSet.next() && resultSet.getInt("count") == 0) {
+                String insertSampleData = "INSERT INTO products (product_id, description, price, stock) VALUES " +
+                        "('P001', 'Cat Toy', 5.99, 100), " +
+                        "('P002', 'Cat Bed', 20.99, 50), " +
+                        "('P003', 'Scratching Post', 15.99, 30)";
+                statement.execute(insertSampleData);
+                System.out.println("Sample data inserted into products table.");
+            }
+        } catch (Exception e) {
+            System.err.println("Error setting up database: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void loadProductDataFromDatabase() {
+        String databaseUrl = "jdbc:sqlite:./dbAccess/catshop.db";
+
+        try (Connection connection = java.sql.DriverManager.getConnection(databaseUrl)) {
+            System.out.println("Connected to SQLite database successfully!");
+
+            Statement statement = connection.createStatement();
+            ResultSet resultSet = statement.executeQuery("SELECT * FROM products");
+
+            while (resultSet.next()) {
+                String id = resultSet.getString("product_id");
+                String description = resultSet.getString("description");
+                double price = resultSet.getDouble("price");
+                int quantity = resultSet.getInt("stock");
+
+                productData.add(new Product(id, description, price, quantity));
+            }
+            System.out.println("Products loaded successfully!");
+        } catch (Exception e) {
+            System.err.println("Error loading data from database: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     private void styleNavButton(Button button) {
@@ -141,34 +219,39 @@ public class MainApp extends Application {
         cartBox.setPadding(new Insets(20));
         cartBox.setStyle("-fx-background-color: white; -fx-padding: 20;");
 
-        ListView<String> cartList = new ListView<>();
-        cartController.viewCart().forEach(item -> {
-            cartList.getItems().add(item.getProduct().getDescription() + " x" + item.getQuantity() + " - $" + String.format("%.2f", item.getTotalPrice()));
+        ListView<CartItem> cartList = new ListView<>();
+        cartList.getItems().addAll(cartController.viewCart());
+        cartList.setCellFactory(param -> new ListCell<>() {
+            @Override
+            protected void updateItem(CartItem item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(item.getProduct().getDescription() + " x" + item.getQuantity() + " - $" + String.format("%.2f", item.getTotalPrice()));
+                }
+            }
+        });
+
+        Button removeSelectedButton = new Button("Remove Selected");
+        removeSelectedButton.setStyle("-fx-background-color: #E76F51; -fx-text-fill: white; -fx-font-size: 14px;");
+        removeSelectedButton.setOnAction(e -> {
+            CartItem selectedItem = cartList.getSelectionModel().getSelectedItem();
+            if (selectedItem != null) {
+                cartController.removeFromCart(selectedItem.getProduct().getProductNum());
+                cartList.getItems().remove(selectedItem);
+                showAlert(Alert.AlertType.INFORMATION, "Item Removed", selectedItem.getProduct().getDescription() + " removed from the cart.");
+            }
         });
 
         Label totalLabel = new Label("Total: $" + String.format("%.2f", cartController.getTotalCost()));
         totalLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-padding: 10 0;");
 
-        Button removeButton = new Button("Remove Selected");
-        removeButton.setStyle("-fx-background-color: #E76F51; -fx-text-fill: white; -fx-font-size: 14px;");
-        removeButton.setOnAction(e -> {
-            String selectedItem = cartList.getSelectionModel().getSelectedItem();
-            if (selectedItem != null) {
-                String productName = selectedItem.split(" x")[0].trim();
-                cartController.removeByName(productName); // Ensure this method exists in CartController
-                cartList.getItems().clear();
-                cartController.viewCart().forEach(item -> {
-                    cartList.getItems().add(item.getProduct().getDescription() + " x" + item.getQuantity() + " - $" + String.format("%.2f", item.getTotalPrice()));
-                });
-                totalLabel.setText("Total: $" + String.format("%.2f", cartController.getTotalCost()));
-            }
-        });
-
         Button closeButton = new Button("Close");
         closeButton.setStyle("-fx-background-color: #E76F51; -fx-text-fill: white; -fx-font-size: 14px;");
         closeButton.setOnAction(e -> cartStage.close());
 
-        cartBox.getChildren().addAll(cartList, totalLabel, removeButton, closeButton);
+        cartBox.getChildren().addAll(cartList, removeSelectedButton, totalLabel, closeButton);
         Scene cartScene = new Scene(cartBox, 400, 400);
         cartStage.setScene(cartScene);
         cartStage.show();

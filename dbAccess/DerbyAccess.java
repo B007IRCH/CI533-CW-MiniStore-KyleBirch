@@ -6,7 +6,7 @@ package dbAccess;
   * @version 2.0
   */
  
-class DerbyAccess extends DBAccess
+public class DerbyAccess extends DBAccess
 {
   private static final String URLdb =
                  "jdbc:derby:catshop.db";

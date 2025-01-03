@@ -1,4 +1,6 @@
-package catalogue;
+package clients.customer;
+
+import catalogue.Product;
 
 public class CartItem {
     private Product product;

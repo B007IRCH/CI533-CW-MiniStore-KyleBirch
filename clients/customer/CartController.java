@@ -1,7 +1,6 @@
 package clients.customer;
 
 import catalogue.Cart;
-import catalogue.CartItem;
 import catalogue.Product;
 
 import java.util.List;
@@ -20,12 +19,12 @@ public class CartController {
     }
 
     /**
-     * Removes a product from the cart by product ID.
-     * @param productId The ID of the product to remove.
+     * Removes a product from the cart by product number.
+     * @param productNum The product number of the product to remove.
      */
-    public void removeFromCart(String productId) {
-        cart.removeItem(productId);
-        System.out.println("Removed product with ID " + productId + " from the cart.");
+    public void removeFromCart(String productNum) {
+        cart.getItems().removeIf(item -> item.getProduct().getProductNum().equals(productNum));
+        System.out.println("Removed product with product number " + productNum + " from the cart.");
     }
 
     /**

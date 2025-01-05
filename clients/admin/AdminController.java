@@ -15,6 +15,10 @@ public class AdminController {
         adminView.setController(this); // Pass the controller to the view
     }
 
+    public void launchAdminPanel() {
+        adminView.displayMenu();
+    }
+
     public void displayStock() {
         adminView.displayStock(stockManager.getStockItems());
     }

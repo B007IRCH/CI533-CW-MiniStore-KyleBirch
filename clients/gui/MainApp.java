@@ -2,13 +2,14 @@ package clients.gui;
 
 import clients.customer.CartController;
 import clients.customer.CartItem;
+import clients.admin.AdminController;
+import clients.admin.AdminView;
 import catalogue.Product;
 import dbAccess.SimpleCSVReader;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.collections.transformation.FilteredList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -23,7 +24,6 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
-import java.util.Locale;
 
 public class MainApp extends Application {
     private CartController cartController = new CartController();
@@ -181,7 +181,15 @@ public class MainApp extends Application {
         styleNavButton(viewCartButton);
         viewCartButton.setOnAction(e -> showCartModal());
 
-        navBar.getChildren().addAll(logoLabel, searchBar, searchButton, categoryFilter, viewCartButton);
+        Button adminButton = new Button("Admin Panel");
+        styleNavButton(adminButton);
+        adminButton.setOnAction(e -> {
+            AdminView adminView = new AdminView();
+            AdminController adminController = new AdminController(adminView);
+            adminController.launchAdminPanel();
+        });
+
+        navBar.getChildren().addAll(logoLabel, searchBar, searchButton, categoryFilter, viewCartButton, adminButton);
         HBox.setHgrow(searchBar, Priority.ALWAYS);
         VBox searchSection = new VBox(navBar);
         root.setTop(searchSection);

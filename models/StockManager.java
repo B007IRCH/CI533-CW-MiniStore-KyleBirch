@@ -1,82 +1,125 @@
 package models;
 
-import java.io.*;
-import java.util.*;
+import dbAccess.DBAccess;
 import models.filters.StockFilter;
 
+import java.sql.*;
+import java.util.*;
+
+/**
+ * Manages stock data using a database.
+ */
 public class StockManager {
-    private static final String STOCK_CSV = "Item_Database.csv"; // Path to your CSV file
-    private final Map<String, StockItem> stockData = new HashMap<>();
+    private final DBAccess dbAccess;
 
     // Singleton instance
     private static StockManager instance;
 
-    private StockManager() {
-        loadStock();
+    // Private constructor to initialize DBAccess and create table
+    private StockManager(DBAccess dbAccess) {
+        this.dbAccess = dbAccess;
+        dbAccess.loadDriver();
+        initializeDatabase();
     }
 
-    public static StockManager getInstance() {
+    public static StockManager getInstance(DBAccess dbAccess) {
         if (instance == null) {
-            instance = new StockManager();
+            instance = new StockManager(dbAccess);
         }
         return instance;
     }
 
-    // Load stock data from the CSV file
-    private void loadStock() {
-        try (BufferedReader br = new BufferedReader(new FileReader(STOCK_CSV))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] parts = line.split(",");
-                if (parts.length == 4) { // Adjust based on CSV structure
-                    String id = parts[0];
-                    String category = parts[1];
-                    String company = parts[2];
-                    int stock = Integer.parseInt(parts[3]);
-                    stockData.put(id, new StockItem(id, category, company, stock));
-                }
+    // Create the StockItems table if it does not exist
+    private void initializeDatabase() {
+        try (Connection conn = dbAccess.getConnection();
+             Statement stmt = conn.createStatement()) {
+
+            // Check if the table exists
+            DatabaseMetaData metaData = conn.getMetaData();
+            ResultSet tables = metaData.getTables(null, null, "STOCKITEMS", null);
+
+            // Create table only if it does not exist
+            if (!tables.next()) {
+                stmt.executeUpdate(
+                        "CREATE TABLE StockItems (" +
+                                "id VARCHAR(255) PRIMARY KEY, " +
+                                "category VARCHAR(255), " +
+                                "company VARCHAR(255), " +
+                                "stock INT" +
+                                ")"
+                );
+                System.out.println("Table 'StockItems' created successfully.");
+            } else {
+                System.out.println("Table 'StockItems' already exists.");
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to initialize database", e);
         }
     }
 
-    // Save updated stock data back to the CSV file
-    public void saveStock() {
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(STOCK_CSV))) {
-            for (StockItem item : stockData.values()) {
-                bw.write(item.toCSV());
-                bw.newLine();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 
-    // Get all stock items
+    // Load stock data from the database
     public Collection<StockItem> getStockItems() {
-        return stockData.values();
+        List<StockItem> stockItems = new ArrayList<>();
+        try (Connection conn = dbAccess.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT * FROM StockItems")) {
+
+            while (rs.next()) {
+                stockItems.add(new StockItem(
+                        rs.getString("id"),
+                        rs.getString("category"),
+                        rs.getString("company"),
+                        rs.getInt("stock")
+                ));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return stockItems;
     }
 
     // Update stock for an item
     public void updateStock(String itemId, int newStock) {
-        if (stockData.containsKey(itemId)) {
-            StockItem item = stockData.get(itemId);
-            item.setStock(newStock);
-            saveStock();
-        } else {
-            System.out.println("Item ID not found.");
+        try (Connection conn = dbAccess.getConnection();
+             PreparedStatement ps = conn.prepareStatement("UPDATE StockItems SET stock = ? WHERE id = ?")) {
+
+            ps.setInt(1, newStock);
+            ps.setString(2, itemId);
+
+            if (ps.executeUpdate() == 0) {
+                System.out.println("Item ID not found.");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 
-    // Filter stock using a StockFilter
+    // Add a new stock item
+    public void addStockItem(StockItem item) {
+        try (Connection conn = dbAccess.getConnection();
+             PreparedStatement ps = conn.prepareStatement(
+                     "INSERT INTO StockItems (id, category, company, stock) VALUES (?, ?, ?, ?)")) {
+
+            ps.setString(1, item.getId());
+            ps.setString(2, item.getCategory());
+            ps.setString(3, item.getCompany());
+            ps.setInt(4, item.getStock());
+
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Filter stock items based on a StockFilter
     public List<StockItem> filterStock(StockFilter filter) {
-        List<StockItem> filtered = new ArrayList<>();
-        for (StockItem item : stockData.values()) {
+        List<StockItem> filteredStock = new ArrayList<>();
+        for (StockItem item : getStockItems()) {
             if (filter.matches(item)) {
-                filtered.add(item);
+                filteredStock.add(item);
             }
         }
-        return filtered;
+        return filteredStock;
     }
 }

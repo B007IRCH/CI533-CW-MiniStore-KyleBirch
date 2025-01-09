@@ -1,6 +1,8 @@
 package clients.admin;
 
+import dbAccess.DBAccess; // Import DBAccess
 import models.StockManager;
+import models.StockItem;
 import models.filters.*;
 
 import java.util.Scanner;
@@ -9,8 +11,8 @@ public class AdminController {
     private final StockManager stockManager;
     private final AdminView adminView;
 
-    public AdminController(AdminView adminView) {
-        this.stockManager = StockManager.getInstance(); // Use the singleton StockManager
+    public AdminController(AdminView adminView, DBAccess dbAccess) {
+        this.stockManager = StockManager.getInstance(dbAccess); // Pass DBAccess to StockManager
         this.adminView = adminView;
         adminView.setController(this); // Pass the controller to the view
     }
@@ -61,7 +63,7 @@ public class AdminController {
         };
 
         if (filter != null) {
-            adminView.displayStock(stockManager.filterStock(filter));
+            adminView.displayStock(stockManager.filterStock(filter)); // Call filterStock in StockManager
         } else {
             System.out.println("Invalid filter choice!");
         }

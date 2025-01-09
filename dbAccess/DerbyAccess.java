@@ -1,33 +1,30 @@
 package dbAccess;
 
 /**
-  * Apache Derby database access
-  * @author  Mike Smith University of Brighton
-  * @version 2.0
-  */
- 
-public class DerbyAccess extends DBAccess
-{
-  private static final String URLdb =
-                 "jdbc:derby:catshop.db";
-  private static final String DRIVER =
-                 "org.apache.derby.jdbc.EmbeddedDriver";
+ * Apache Derby database access.
+ * @author Kyle Birch
+ * @version 2.1
+ */
+public class DerbyAccess extends DBAccess {
+  private static final String URLdb = "jdbc:derby:catshop.db;create=true";
+  private static final String DRIVER = "org.apache.derby.jdbc.EmbeddedDriver";
 
   /**
-   * Load the Apache Derby database driver
+   * Load the Apache Derby database driver.
    */
-  public void loadDriver() throws Exception
-  {
-    Class.forName(DRIVER).newInstance();
+  @Override
+  public void loadDriver() {
+    try {
+      Class.forName(DRIVER).getDeclaredConstructor().newInstance();
+      System.out.println("Derby driver loaded successfully.");
+    } catch (ReflectiveOperationException e) {
+      // Catch ReflectiveOperationException to include ClassNotFoundException and other reflection-related exceptions
+      throw new RuntimeException("Failed to load Derby driver", e);
+    }
   }
 
-  /**
-   * Return the url to access the database
-   * @return url to database
-   */
-  public String urlOfDatabase()
-  {
+  @Override
+  public String urlOfDatabase() {
     return URLdb;
   }
 }
-
